@@ -139,6 +139,7 @@ with q/Esc, it stays stopped until the next boot or a manual start.
 | Red box | Other detections |
 | Bottom label | "VCC Electronic Repair" on a translucent beige strip (always shown) |
 | Santa hat | Drawn on the tracked face (turn off with `SANTA_HAT = False`) |
+| Antlers and red nose | Drawn on every other confirmed face (turn off with `REINDEER = False`) |
 | Cyan rectangle | Dead zone: the camera doesn't move while the face is inside it |
 | Top line | State (`TRACKING` / `HOLD` / `SCANNING`), servo angles, frame rate |
 
@@ -190,6 +191,8 @@ TRACKING raw=31 confirmed=31 pan= 51.9 tilt= 94.3 fps=30.0
 | `REQUIRE_EYES` | True | Set to False to turn off the eye check altogether. |
 | `MISS_TOLERANCE` | 5 | Missed frames allowed before a face is dropped. |
 | `PREVIEW_SIZE` | None | Preview size. None = as large as fits the screen; or e.g. `(1024, 768)`. |
+| `REINDEER` | True | Draw antlers and a red Rudolph nose on every other detected face. |
+| `REINDEER_REQUIRE_EYES` | True | Only decorate other faces once eyes are found in them, so wall pictures don't get antlers. False also uses the no-eyes fallback. |
 | `SANTA_HAT` | True | Draw a Santa hat on the tracked face in the preview window. |
 | `SHOW_OVERLAY` | True | Show the face boxes, dead-zone rectangle and status text. False gives a clean picture (the hat is still drawn). |
 | `LABEL_TEXT` | "VCC Electronic Repair" | Label centred at the bottom of the preview, in forest green on translucent beige (`""` hides it). Size, colours and opacity: `LABEL_SCALE`, `LABEL_COLOUR`, `LABEL_BG_COLOUR`, `LABEL_BG_OPACITY`. |

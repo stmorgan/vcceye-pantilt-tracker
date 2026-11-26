@@ -176,6 +176,50 @@ class FaceLock:
         return abs(ax - bx) <= limit and abs(ay - by) <= limit
 
 
+class OtherFaces:
+    """Keeps track of the faces other than the tracked one, for decorations.
+
+    A face counts once it has been seen for CONFIRM_FRAMES frames with eyes
+    found at least once. Unless REINDEER_REQUIRE_EYES is False, there is no
+    no-eyes fallback here: face-like wall pictures stay in view for a long time
+    while someone is being tracked. Faces are kept through up to MISS_TOLERANCE
+    missed frames so decorations don't flicker.
+    """
+
+    def __init__(self, eye_check=None):
+        self.eye_check = eye_check
+        self.tracks = []   # dicts: box, hits, misses, eyes
+
+    def update(self, boxes, exclude):
+        unmatched = list(self.tracks)
+        for box in boxes:
+            if any(box is e for e in exclude if e is not None):
+                continue
+            near = [t for t in unmatched if FaceLock._same(box, t["box"])]
+            if near:
+                t = min(near, key=lambda t: FaceLock._dist(box, t["box"]))
+                unmatched.remove(t)
+                t["box"], t["hits"], t["misses"] = box, t["hits"] + 1, 0
+            else:
+                t = {"box": box, "hits": 1, "misses": 0, "eyes": False}
+                self.tracks.append(t)
+            if not t["eyes"]:
+                t["eyes"] = self.eye_check is None or self.eye_check(box)
+        for t in unmatched:
+            t["misses"] += 1
+        self.tracks = [t for t in self.tracks if t["misses"] <= config.MISS_TOLERANCE]
+        # Never decorate the tracked face (or its candidate) a second time.
+        return [t["box"] for t in self.tracks if self._confirmed(t)
+                and not any(e is not None and FaceLock._same(t["box"], e) for e in exclude)]
+
+    @staticmethod
+    def _confirmed(t):
+        if t["hits"] >= config.CONFIRM_FRAMES and t["eyes"]:
+            return True
+        return (not config.REINDEER_REQUIRE_EYES and bool(config.CONFIRM_FRAMES_NO_EYES)
+                and t["hits"] >= config.CONFIRM_FRAMES_NO_EYES)
+
+
 def _bezier(p0, p1, p2, n=24):
     """Points along a quadratic Bezier curve from p0 to p2 with control p1."""
     pts = []
@@ -218,6 +262,40 @@ def draw_santa_hat(img, face):
     r = int(0.15 * w)
     cv2.circle(img, (int(tip[0]), int(tip[1])), r, white, -1, cv2.LINE_AA)
     cv2.circle(img, (int(tip[0]), int(tip[1])), r, shadow, max(1, w // 50), cv2.LINE_AA)
+
+
+def draw_reindeer(img, face):
+    """Draw antlers above the face box (x, y, w, h) and a red Rudolph nose on it."""
+    x, y, w, h = face
+    cx = x + w / 2
+    brown, dark = (35, 75, 125), (20, 45, 80)
+    beam_t, tine_t = max(2, w // 12), max(2, w // 16)
+
+    def P(u, v):                       # face-relative units (fractions of w)
+        return (cx + u * w, y + v * w)
+
+    for side in (-1, 1):               # left antler, then mirrored right one
+        base, ctrl, tip = P(side * 0.22, 0.06), P(side * 0.62, -0.2), P(side * 0.48, -0.82)
+        beam = _bezier(base, ctrl, tip)
+        lines = [beam]
+        for t, end in ((0.35, P(side * 0.85, -0.42)),     # outer tine
+                       (0.55, P(side * 0.82, -0.8)),      # upper outer tine
+                       (0.7, P(side * 0.22, -0.7))):      # inner tine
+            start = beam[int(t * (len(beam) - 1))]
+            mid = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2 - 0.08 * w)
+            lines.append(_bezier(start, mid, end, 10))
+        for pts, thick in zip(lines, [beam_t] + [tine_t] * 3):
+            arr = np.array(pts, np.int32)
+            cv2.polylines(img, [arr], False, dark, thick + 2, cv2.LINE_AA)
+            cv2.polylines(img, [arr], False, brown, thick, cv2.LINE_AA)
+
+    # Red nose with a small highlight.
+    nose = (int(cx), int(y + 0.6 * h))
+    r = max(4, int(0.11 * w))
+    cv2.circle(img, nose, r, (20, 20, 220), -1, cv2.LINE_AA)
+    cv2.circle(img, nose, r, (10, 10, 140), max(1, w // 60), cv2.LINE_AA)
+    cv2.circle(img, (nose[0] - r // 3, nose[1] - r // 3), max(1, r // 4),
+               (230, 230, 255), -1, cv2.LINE_AA)
 
 
 def draw_label(img, text):
@@ -305,6 +383,7 @@ def main():
         eye_detectors = [cv2.CascadeClassifier(find_cascade(n)) for n in config.EYE_CASCADES]
         eye_check = lambda f: has_eyes(eye_detectors, frame, f)  # uses current frame
     lock = FaceLock(eye_check)
+    others = OtherFaces(eye_check)
     raw_frames = confirmed_frames = 0  # per-second counts for the status line
     window = "Face tracker"
     if not args.headless:
@@ -331,6 +410,7 @@ def main():
             h, w = frame.shape[:2]
             faces = detect_faces(detector, frame)
             face, candidate = lock.update(faces)
+            other_faces = others.update(faces, (face, candidate)) if config.REINDEER else []
 
             if face is not None:
                 last_seen = now
@@ -377,6 +457,8 @@ def main():
                         colour = ((0, 255, 0) if box == face else
                                   (0, 165, 255) if box == candidate else (0, 0, 255))
                         cv2.rectangle(frame, (x, y), (x + fw, y + fh), colour, 2)
+                for other in other_faces:
+                    draw_reindeer(frame, other)
                 if config.SANTA_HAT and face is not None:
                     draw_santa_hat(frame, face)
                 if config.SHOW_OVERLAY:

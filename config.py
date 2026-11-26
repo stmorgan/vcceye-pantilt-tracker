@@ -64,6 +64,11 @@ PREVIEW_SIZE = None
 PREVIEW_CHROME_PX = 60
 # Draw a Santa hat on the tracked face in the preview window.
 SANTA_HAT = True
+# Draw reindeer antlers and a red Rudolph nose on every other detected face.
+REINDEER = True
+# Only decorate other faces once eyes are found in them, so face-like wall
+# pictures don't get antlers. False = also use the CONFIRM_FRAMES_NO_EYES fallback.
+REINDEER_REQUIRE_EYES = True
 # Show the face boxes, dead-zone rectangle and status text. Set to False for a
 # clean picture (the Santa hat is still drawn). The status line is still
 # printed to the terminal/journal either way.
