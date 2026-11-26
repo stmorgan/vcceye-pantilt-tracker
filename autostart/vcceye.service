@@ -1,0 +1,17 @@
+[Unit]
+Description=Pan/tilt face tracker (vcceye)
+# Started by vcceye-autostart.desktop once the desktop session is up, so the
+# preview window has a display to open on.
+
+[Service]
+Type=simple
+WorkingDirectory=%h/vcceye
+ExecStart=%h/vcceye/.venv/bin/python face_tracker.py
+Environment=DISPLAY=:0
+Environment=PYTHONUNBUFFERED=1
+# SIGINT lets the tracker centre the camera and release the servos on stop.
+KillSignal=SIGINT
+TimeoutStopSec=10
+# Restart after a crash, but not after quitting with q/Esc in the preview.
+Restart=on-failure
+RestartSec=5

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=vcceye face tracker
+Comment=Start the pan/tilt face tracker when the desktop starts
+Exec=systemctl --user start vcceye.service
+NoDisplay=true
