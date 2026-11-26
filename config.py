@@ -63,6 +63,13 @@ SANTA_HAT = True
 # clean picture (the Santa hat is still drawn). The status line is still
 # printed to the terminal/journal either way.
 SHOW_OVERLAY = True
+# Label centred at the bottom of every preview frame ("" to hide it).
+# Colours are BGR (blue, green, red), as OpenCV uses.
+LABEL_TEXT = "VCC Electronic Repair"
+LABEL_SCALE = 0.8
+LABEL_COLOUR = (34, 139, 34)        # forest green (#228B22)
+LABEL_BG_COLOUR = (220, 245, 245)   # beige (#F5F5DC)
+LABEL_BG_OPACITY = 0.6              # 0 = invisible, 1 = solid
 
 # --- Proportional control ---
 # Fraction of the measured angular error corrected per frame (0..1).

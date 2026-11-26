@@ -218,6 +218,24 @@ def draw_santa_hat(img, face):
     cv2.circle(img, (int(tip[0]), int(tip[1])), r, shadow, max(1, w // 50), cv2.LINE_AA)
 
 
+def draw_label(img, text):
+    """Draw text centred at the bottom of the frame on a translucent background."""
+    font, scale, thick = cv2.FONT_HERSHEY_SIMPLEX, config.LABEL_SCALE, 2
+    (tw, th), base = cv2.getTextSize(text, font, scale, thick)
+    pad_x, pad_y, margin = 12, 8, 10
+    h, w = img.shape[:2]
+    x0 = max(0, (w - tw) // 2 - pad_x)
+    x1 = min(w, (w + tw) // 2 + pad_x)
+    y1 = h - margin
+    y0 = max(0, y1 - th - base - 2 * pad_y)
+    roi = img[y0:y1, x0:x1]
+    bg = np.full_like(roi, config.LABEL_BG_COLOUR)
+    a = config.LABEL_BG_OPACITY
+    cv2.addWeighted(bg, a, roi, 1 - a, 0, dst=roi)
+    cv2.putText(img, text, ((w - tw) // 2, y1 - pad_y - base), font, scale,
+                config.LABEL_COLOUR, thick, cv2.LINE_AA)
+
+
 def axis_correction(offset_frac, fov_deg, kp, sign):
     """Servo delta (deg) for a normalised offset (-0.5..0.5) from frame centre."""
     if abs(offset_frac) < config.DEAD_ZONE:
@@ -327,6 +345,8 @@ def main():
                     cv2.putText(frame,
                                 f"{state}  pan {rig.pan:5.1f}  tilt {rig.tilt:5.1f}  {fps:4.1f} fps",
                                 (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                if config.LABEL_TEXT:
+                    draw_label(frame, config.LABEL_TEXT)
                 cv2.imshow(window, frame)
                 if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                     break
