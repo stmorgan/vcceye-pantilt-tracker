@@ -59,6 +59,10 @@ MATCH_DIST = 0.5
 # --- Preview ---
 # Draw a Santa hat on the tracked face in the preview window.
 SANTA_HAT = True
+# Show the face boxes, dead-zone rectangle and status text. Set to False for a
+# clean picture (the Santa hat is still drawn). The status line is still
+# printed to the terminal/journal either way.
+SHOW_OVERLAY = True
 
 # --- Proportional control ---
 # Fraction of the measured angular error corrected per frame (0..1).

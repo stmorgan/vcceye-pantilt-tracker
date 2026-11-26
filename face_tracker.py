@@ -309,22 +309,24 @@ def main():
                 raw_frames = confirmed_frames = 0
 
             if not args.headless:
-                cx, cy = w // 2, h // 2
-                dzx, dzy = int(config.DEAD_ZONE * w), int(config.DEAD_ZONE * h)
-                cv2.rectangle(frame, (cx - dzx, cy - dzy), (cx + dzx, cy + dzy),
-                              (255, 255, 0), 1)
-                # green = locked face being tracked, orange = candidate not yet
-                # locked, red = other detections
-                for (x, y, fw, fh) in faces:
-                    box = (x, y, fw, fh)
-                    colour = ((0, 255, 0) if box == face else
-                              (0, 165, 255) if box == candidate else (0, 0, 255))
-                    cv2.rectangle(frame, (x, y), (x + fw, y + fh), colour, 2)
+                if config.SHOW_OVERLAY:
+                    cx, cy = w // 2, h // 2
+                    dzx, dzy = int(config.DEAD_ZONE * w), int(config.DEAD_ZONE * h)
+                    cv2.rectangle(frame, (cx - dzx, cy - dzy), (cx + dzx, cy + dzy),
+                                  (255, 255, 0), 1)
+                    # green = locked face being tracked, orange = candidate not yet
+                    # locked, red = other detections
+                    for (x, y, fw, fh) in faces:
+                        box = (x, y, fw, fh)
+                        colour = ((0, 255, 0) if box == face else
+                                  (0, 165, 255) if box == candidate else (0, 0, 255))
+                        cv2.rectangle(frame, (x, y), (x + fw, y + fh), colour, 2)
                 if config.SANTA_HAT and face is not None:
                     draw_santa_hat(frame, face)
-                cv2.putText(frame,
-                            f"{state}  pan {rig.pan:5.1f}  tilt {rig.tilt:5.1f}  {fps:4.1f} fps",
-                            (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                if config.SHOW_OVERLAY:
+                    cv2.putText(frame,
+                                f"{state}  pan {rig.pan:5.1f}  tilt {rig.tilt:5.1f}  {fps:4.1f} fps",
+                                (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
                 cv2.imshow(window, frame)
                 if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                     break

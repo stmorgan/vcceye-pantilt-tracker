@@ -131,6 +131,9 @@ with q/Esc, it stays stopped until the next boot or a manual start.
 | Cyan rectangle | Dead zone: the camera doesn't move while the face is inside it |
 | Top line | State (`TRACKING` / `HOLD` / `SCANNING`), servo angles, frame rate |
 
+Set `SHOW_OVERLAY = False` in `config.py` to hide the boxes, the dead-zone
+rectangle and the top line.
+
 Once a second, the tracker also prints a status line to the terminal or the
 journal:
 
@@ -176,6 +179,7 @@ TRACKING raw=31 confirmed=31 pan= 51.9 tilt= 94.3 fps=30.0
 | `REQUIRE_EYES` | True | Set to False to turn off the eye check altogether. |
 | `MISS_TOLERANCE` | 5 | Missed frames allowed before a face is dropped. |
 | `SANTA_HAT` | True | Draw a Santa hat on the tracked face in the preview window. |
+| `SHOW_OVERLAY` | True | Show the face boxes, dead-zone rectangle and status text. False gives a clean picture (the hat is still drawn). |
 | `LOST_FACE_HOLD_S` | 1.5 | How long to wait after losing a face before scanning. |
 | `SCAN_SPEED_DEG_S` | 20 | Pan speed while scanning. |
 | `SCAN_TILT_UP_DEG` | (0, 25, 50) | Tilt levels for scanning, in degrees above home (negative = below). Use `(0,)` for a level-only scan. |
