@@ -56,6 +56,10 @@ CONFIRM_FRAMES_NO_EYES = 30
 # frames and still count as the same face.
 MATCH_DIST = 0.5
 
+# --- Preview ---
+# Draw a Santa hat on the tracked face in the preview window.
+SANTA_HAT = True
+
 # --- Proportional control ---
 # Fraction of the measured angular error corrected per frame (0..1).
 # Lower = smoother/slower, higher = faster but may overshoot.

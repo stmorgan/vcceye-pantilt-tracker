@@ -14,6 +14,7 @@ import os
 import time
 
 import cv2
+import numpy as np
 
 import config
 from servos import PanTilt
@@ -173,6 +174,50 @@ class FaceLock:
         return abs(ax - bx) <= limit and abs(ay - by) <= limit
 
 
+def _bezier(p0, p1, p2, n=24):
+    """Points along a quadratic Bezier curve from p0 to p2 with control p1."""
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        a, b, c = (1 - t) ** 2, 2 * (1 - t) * t, t * t
+        pts.append((a * p0[0] + b * p1[0] + c * p2[0],
+                    a * p0[1] + b * p1[1] + c * p2[1]))
+    return pts
+
+
+def draw_santa_hat(img, face):
+    """Draw a Santa hat sitting on top of the face box (x, y, w, h)."""
+    x, y, w, h = face
+    cx = x + w / 2
+    band_w, band_h = 1.25 * w, 0.26 * w
+    band_cy = y + 0.12 * h - band_h / 2          # fur band sits on the forehead
+    band_top = band_cy - band_h / 3
+    left, right = cx - 0.52 * w, cx + 0.52 * w
+    tip = (cx + 0.62 * w, band_top - 0.45 * w)   # the point flops over to the right
+
+    # Red cone: up the left side, over the top to the tip, back down the right side.
+    outline = (_bezier((left, band_top), (cx - 0.3 * w, band_top - 1.25 * w), tip)
+               + _bezier(tip, (cx + 0.2 * w, band_top - 0.55 * w), (right, band_top)))
+    cone = np.array(outline, np.int32)
+    cv2.fillPoly(img, [cone], (40, 30, 200), cv2.LINE_AA)
+    # Shading along the right-hand fold.
+    fold = np.array(_bezier(tip, (cx + 0.2 * w, band_top - 0.55 * w), (right, band_top))
+                    + _bezier((right - 0.2 * w, band_top), (cx + 0.05 * w, band_top - 0.6 * w),
+                              tip), np.int32)
+    cv2.fillPoly(img, [fold], (30, 20, 150), cv2.LINE_AA)
+    cv2.polylines(img, [cone], True, (20, 10, 110), max(1, w // 60), cv2.LINE_AA)
+
+    # White fur band and pompom.
+    white, shadow = (245, 245, 245), (200, 200, 210)
+    axes = (int(band_w / 2), int(band_h / 2))
+    centre = (int(cx), int(band_cy))
+    cv2.ellipse(img, centre, axes, 0, 0, 360, white, -1, cv2.LINE_AA)
+    cv2.ellipse(img, centre, axes, 0, 0, 360, shadow, max(1, w // 50), cv2.LINE_AA)
+    r = int(0.15 * w)
+    cv2.circle(img, (int(tip[0]), int(tip[1])), r, white, -1, cv2.LINE_AA)
+    cv2.circle(img, (int(tip[0]), int(tip[1])), r, shadow, max(1, w // 50), cv2.LINE_AA)
+
+
 def axis_correction(offset_frac, fov_deg, kp, sign):
     """Servo delta (deg) for a normalised offset (-0.5..0.5) from frame centre."""
     if abs(offset_frac) < config.DEAD_ZONE:
@@ -275,6 +320,8 @@ def main():
                     colour = ((0, 255, 0) if box == face else
                               (0, 165, 255) if box == candidate else (0, 0, 255))
                     cv2.rectangle(frame, (x, y), (x + fw, y + fh), colour, 2)
+                if config.SANTA_HAT and face is not None:
+                    draw_santa_hat(frame, face)
                 cv2.putText(frame,
                             f"{state}  pan {rig.pan:5.1f}  tilt {rig.tilt:5.1f}  {fps:4.1f} fps",
                             (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
