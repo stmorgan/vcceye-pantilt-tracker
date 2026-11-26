@@ -7,9 +7,11 @@ When no face is seen for a while, the camera slowly scans back and forth.
 
 Usage:  python face_tracker.py [--headless]
 Keys in the preview window:  q / Esc = quit
+(Full screen is handled by the desktop: see autostart/labwc-rc.xml; F11 toggles.)
 """
 
 import argparse
+import glob
 import os
 import time
 
@@ -236,6 +238,34 @@ def draw_label(img, text):
                 config.LABEL_COLOUR, thick, cv2.LINE_AA)
 
 
+def detect_screen_size():
+    """(width, height) of the first connected monitor, or None."""
+    for status in sorted(glob.glob("/sys/class/drm/card*-*/status")):
+        try:
+            with open(status) as f:
+                if f.read().strip() != "connected":
+                    continue
+            with open(os.path.join(os.path.dirname(status), "modes")) as f:
+                w, h = f.readline().strip().split("x")[:2]
+            return int(w), int(h)
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def preview_size(frame_w, frame_h):
+    """Size to show the preview at: as large as fits the screen below the
+    window's toolbar and status bar, keeping the aspect ratio."""
+    if config.PREVIEW_SIZE:
+        return tuple(config.PREVIEW_SIZE)
+    screen = detect_screen_size()
+    if screen is None:
+        return None
+    sw, sh = screen[0], screen[1] - config.PREVIEW_CHROME_PX
+    scale = min(sw / frame_w, sh / frame_h)
+    return int(frame_w * scale), int(frame_h * scale)
+
+
 def axis_correction(offset_frac, fov_deg, kp, sign):
     """Servo delta (deg) for a normalised offset (-0.5..0.5) from frame centre."""
     if abs(offset_frac) < config.DEAD_ZONE:
@@ -277,6 +307,14 @@ def main():
     lock = FaceLock(eye_check)
     raw_frames = confirmed_frames = 0  # per-second counts for the status line
     window = "Face tracker"
+    if not args.headless:
+        # The desktop makes this window full screen (autostart/labwc-rc.xml).
+        # OpenCV's Qt window doesn't scale the picture itself, so frames are
+        # scaled to fit the screen below the toolbar and shown at actual size
+        # (AUTOSIZE). GUI_EXPANDED keeps the toolbar. OpenCV's own full-screen
+        # mode is not used because it hides the toolbar.
+        cv2.namedWindow(window, cv2.WINDOW_AUTOSIZE | cv2.WINDOW_GUI_EXPANDED)
+    display_size = None
 
     try:
         while True:
@@ -347,6 +385,10 @@ def main():
                                 (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
                 if config.LABEL_TEXT:
                     draw_label(frame, config.LABEL_TEXT)
+                if display_size is None:
+                    display_size = preview_size(w, h) or (w, h)
+                if display_size != (w, h):
+                    frame = cv2.resize(frame, display_size, interpolation=cv2.INTER_LINEAR)
                 cv2.imshow(window, frame)
                 if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                     break

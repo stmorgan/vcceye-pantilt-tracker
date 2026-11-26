@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  labwc (desktop window manager) settings for the face tracker.
+  Installed as ~/.config/labwc/rc.xml by install.sh. Raspberry Pi OS starts
+  labwc with -m, which merges this file into the system settings.
+
+  - The "Face tracker" window opens full screen. The desktop does this, not
+    OpenCV, so the window keeps its toolbar and the picture scales to fit.
+  - F11 toggles full screen for the focused window.
+-->
+<labwc_config>
+  <keyboard>
+    <keybind key="F11">
+      <action name="ToggleFullscreen" />
+    </keybind>
+  </keyboard>
+  <windowRules>
+    <windowRule title="Face tracker">
+      <action name="ToggleFullscreen" />
+    </windowRule>
+  </windowRules>
+</labwc_config>

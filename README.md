@@ -85,7 +85,10 @@ sh autostart/install.sh
 
 This installs a systemd user service (`vcceye.service`). The service is
 started by an entry in `~/.config/autostart/` once the desktop has loaded, so
-the preview window can open on the monitor. To remove it:
+the preview window can open on the monitor. It also installs
+`~/.config/labwc/rc.xml`, which makes the preview window full screen and binds
+F11 to toggle full screen. If you already have your own `rc.xml`, it is left
+alone and the script tells you which rules to add. To remove it:
 
 ```sh
 sh autostart/install.sh --uninstall
@@ -104,6 +107,13 @@ cd ~/vcceye
 When started over SSH, the window opens on the Pi's own monitor (`DISPLAY=:0`).
 Press **q** or **Esc** in the window, or Ctrl-C in the terminal, to quit. On
 exit the camera returns to centre and the servos are released.
+
+The preview opens full screen, with OpenCV's toolbar kept at the top, and the
+picture is scaled up to fill the screen height. Press **F11** to switch between
+full screen and a normal window. Full screen is done by the desktop (labwc),
+using the window rule in `autostart/labwc-rc.xml` that `install.sh` installs as
+`~/.config/labwc/rc.xml`. (OpenCV's own full-screen mode hides the toolbar, so
+it isn't used.)
 
 Only one copy can use the camera at a time. If the autostart service is
 running, stop it first (see below).
@@ -179,6 +189,7 @@ TRACKING raw=31 confirmed=31 pan= 51.9 tilt= 94.3 fps=30.0
 | `CONFIRM_FRAMES_NO_EYES` | 30 | Frames needed to lock without eyes. Lower locks faster but makes false locks more likely; 0 turns this off. |
 | `REQUIRE_EYES` | True | Set to False to turn off the eye check altogether. |
 | `MISS_TOLERANCE` | 5 | Missed frames allowed before a face is dropped. |
+| `PREVIEW_SIZE` | None | Preview size. None = as large as fits the screen; or e.g. `(1024, 768)`. |
 | `SANTA_HAT` | True | Draw a Santa hat on the tracked face in the preview window. |
 | `SHOW_OVERLAY` | True | Show the face boxes, dead-zone rectangle and status text. False gives a clean picture (the hat is still drawn). |
 | `LABEL_TEXT` | "VCC Electronic Repair" | Label centred at the bottom of the preview, in forest green on translucent beige (`""` hides it). Size, colours and opacity: `LABEL_SCALE`, `LABEL_COLOUR`, `LABEL_BG_COLOUR`, `LABEL_BG_OPACITY`. |
@@ -228,5 +239,5 @@ is using the webcam. Run `systemctl --user stop vcceye` first.
 | `config.py` | All settings |
 | `calibrate.py` | Measures servo directions and field of view; moves or releases the servos by hand |
 | `survey.py` | Sweeps the scene and records detections, to track down false positives |
-| `autostart/` | systemd user service, desktop autostart entry, and the `install.sh` that installs or removes them |
+| `autostart/` | systemd user service, desktop autostart entry, labwc full-screen rule, and the `install.sh` that installs or removes them |
 | `PROJECT_PLAN.md` | The original project brief |

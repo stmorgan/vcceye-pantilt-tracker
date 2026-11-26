@@ -57,6 +57,11 @@ CONFIRM_FRAMES_NO_EYES = 30
 MATCH_DIST = 0.5
 
 # --- Preview ---
+# Preview size. None = as large as fits the screen (the desktop shows the
+# window full screen; see autostart/labwc-rc.xml). Or set e.g. (1024, 768).
+PREVIEW_SIZE = None
+# Screen height taken by the preview window's toolbar and status bar.
+PREVIEW_CHROME_PX = 60
 # Draw a Santa hat on the tracked face in the preview window.
 SANTA_HAT = True
 # Show the face boxes, dead-zone rectangle and status text. Set to False for a
