@@ -198,6 +198,11 @@ def main():
     time.sleep(0.5)
 
     scan_dir = 1.0
+    # Tilt levels visited during scanning, up then back down: e.g. 0, 25, 50, 25.
+    levels = list(config.SCAN_TILT_UP_DEG) or [0]
+    scan_seq = levels + levels[-2:0:-1]
+    scan_i = 0
+    up_dir = -config.TILT_SIGN   # TILT_SIGN -1 means increasing angle tilts up
     last_seen = time.monotonic()
     last_t = time.monotonic()
     fps = 0.0
@@ -238,12 +243,15 @@ def main():
             elif now - last_seen < config.LOST_FACE_HOLD_S:
                 state = "HOLD"
             else:
-                # Scan: sweep pan between limits, ease tilt back to home.
+                # Scan: sweep pan between limits; at each end, step tilt to the
+                # next level so the scan also covers faces above (or below) home.
                 new_pan = rig.pan + scan_dir * config.SCAN_SPEED_DEG_S * dt
                 if new_pan >= config.PAN_MAX or new_pan <= config.PAN_MIN:
                     scan_dir = -scan_dir
-                d_tilt = config.TILT_HOME - rig.tilt
-                max_t = config.TILT_RETURN_DEG_S * dt
+                    scan_i = (scan_i + 1) % len(scan_seq)
+                target_tilt = config.TILT_HOME + up_dir * scan_seq[scan_i]
+                d_tilt = target_tilt - rig.tilt
+                max_t = config.SCAN_TILT_SPEED_DEG_S * dt
                 rig.move_to(new_pan, rig.tilt + max(-max_t, min(max_t, d_tilt)))
                 state = "SCANNING"
 

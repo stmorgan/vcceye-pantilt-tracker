@@ -70,4 +70,9 @@ MAX_STEP_DEG = 4.0
 # --- Scanning when no face is visible ---
 LOST_FACE_HOLD_S = 1.5    # hold position this long before starting to scan
 SCAN_SPEED_DEG_S = 20.0   # pan sweep speed
-TILT_RETURN_DEG_S = 15.0  # speed at which tilt returns to TILT_HOME while scanning
+# Tilt levels for scanning, in degrees above TILT_HOME (negative = below).
+# After each pan sweep the tilt steps to the next level and back down again,
+# e.g. (0, 25, 50) gives 0, 25, 50, 25, 0, ... The camera sees about +/-17 deg
+# vertically, so levels about 25 deg apart overlap slightly.
+SCAN_TILT_UP_DEG = (0, 25, 50)
+SCAN_TILT_SPEED_DEG_S = 15.0  # how fast tilt moves between scan levels
