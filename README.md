@@ -102,7 +102,12 @@ sh autostart/install.sh --uninstall
 cd ~/vcceye
 .venv/bin/python face_tracker.py              # with the preview window
 .venv/bin/python face_tracker.py --headless   # no window
+.venv/bin/python face_tracker.py --debug-log track.csv   # log every frame
 ```
+
+`--debug-log` writes one CSV line per frame: state, number of detections, the
+tracked face's x position and width, its predicted x position, the servo
+angles and the face's speed. It's useful for checking how tracking behaves.
 
 When started over SSH, the window opens on the Pi's own monitor (`DISPLAY=:0`).
 Press **q** or **Esc** in the window, or Ctrl-C in the terminal, to quit. On
@@ -141,7 +146,7 @@ with q/Esc, it stays stopped until the next boot or a manual start.
 | Santa hat | Drawn on the tracked face (turn off with `SANTA_HAT = False`) |
 | Antlers and red nose | Drawn on every other confirmed face (turn off with `REINDEER = False`) |
 | Cyan rectangle | Dead zone: the camera doesn't move while the face is inside it |
-| Top line | State (`TRACKING` / `HOLD` / `SCANNING`), servo angles, frame rate |
+| Top line | State (`TRACKING` / `COASTING` / `SEARCHING` / `RELOCKED` / `HOLD` / `SCANNING`), servo angles, frame rate |
 
 Set `SHOW_OVERLAY = False` in `config.py` to hide the boxes, the dead-zone
 rectangle and the top line.
@@ -170,7 +175,18 @@ TRACKING raw=31 confirmed=31 pan= 51.9 tilt= 94.3 fps=30.0
    degrees using the camera's field of view. Each frame, the camera moves a
    fraction (`KP_PAN`/`KP_TILT`) of that offset, at most 4°. Inside the dead
    zone it doesn't move.
-4. **Scan:** if no face has been seen for 1.5 s, pan sweeps between its limits
+4. **Fast movement:** the tracked face's position and speed are tracked in room
+   angles (allowing for the camera's own movement and its 0.13 s picture
+   delay). Once a face is *trusted* (tracked for 15 frames, with eyes found in
+   at least 3):
+   - the camera also turns with the face's speed, so it doesn't lag behind;
+   - if the face drops out (blur, or it outruns the camera), the camera keeps
+     turning towards where it should be for up to 0.5 s (`COASTING`);
+   - if it's still lost, the camera quickly pans 60° the way it was going, or
+     looks 30° to each side if the direction is unknown (`SEARCHING`), and a
+     face of similar size found there, or near the predicted spot within 1 s,
+     is locked straight away (`RELOCKED`).
+5. **Scan:** if no face has been seen for 1.5 s, pan sweeps between its limits
    at 20°/s. At the end of each sweep, tilt moves to the next scan level
    (0°, 25°, 50° above home, then back down). This finds people standing close
    to the camera, whose heads are above its normal view.
@@ -196,6 +212,12 @@ TRACKING raw=31 confirmed=31 pan= 51.9 tilt= 94.3 fps=30.0
 | `SANTA_HAT` | True | Draw a Santa hat on the tracked face in the preview window. |
 | `SHOW_OVERLAY` | True | Show the face boxes, dead-zone rectangle and status text. False gives a clean picture (the hat is still drawn). |
 | `LABEL_TEXT` | "VCC Electronic Repair" | Label centred at the bottom of the preview, in forest green on translucent beige (`""` hides it). Size, colours and opacity: `LABEL_SCALE`, `LABEL_COLOUR`, `LABEL_BG_COLOUR`, `LABEL_BG_OPACITY`. |
+| `FEEDFORWARD` | 0.5 | How much the camera turns with the face's measured speed (0 = off). Higher keeps up better but may overshoot. |
+| `COAST_FRAMES` | 15 | Frames a trusted face may be missing while the camera keeps turning towards its predicted position. |
+| `RELOCK_S`, `RELOCK_RADIUS_DEG` | 1.0, 15 | Just after losing a face, one this close to its predicted position is locked at once. |
+| `SEARCH_DEG`, `SEARCH_SPEED_DEG_S` | 60, 40 | How far and how fast to search after losing a face. |
+| `TRUST_FRAMES`, `TRUST_EYE_FRAMES` | 15, 3 | When a lock is trusted enough for the fast-movement features. |
+| `CAMERA_LATENCY_S` | 0.13 | Delay from a servo move until the picture shows it (measured on this rig). |
 | `LOST_FACE_HOLD_S` | 1.5 | How long to wait after losing a face before scanning. |
 | `SCAN_SPEED_DEG_S` | 20 | Pan speed while scanning. |
 | `SCAN_TILT_UP_DEG` | (0, 25, 50) | Tilt levels for scanning, in degrees above home (negative = below). Use `(0,)` for a level-only scan. |
@@ -226,6 +248,11 @@ detector fires. Then:
 - raise `CONFIRM_FRAMES_NO_EYES`,
 - or raise `MIN_NEIGHBORS`,
 - or move or cover whatever the detector is reacting to.
+
+**It loses people who move quickly.** Check the lighting first: in dim light
+the camera uses long exposures and fast movement blurs the face. Then try
+raising `FEEDFORWARD` (e.g. 0.8) or `COAST_FRAMES`. Run with `--debug-log`
+to see where the track is lost.
 
 **It's slow to lock onto real faces.** Lower `CONFIRM_FRAMES_NO_EYES` (e.g.
 to 18), or make sure the face is well lit.

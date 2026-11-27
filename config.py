@@ -92,6 +92,40 @@ DEAD_ZONE = 0.06
 # Maximum servo movement per frame, in degrees.
 MAX_STEP_DEG = 4.0
 
+# --- Fast movement ---
+# The tracked face's position and speed are tracked in room angles, so the
+# camera can follow fast movers and find them again after losing them.
+# Turn with the face's measured speed as well as towards its position
+# (0 = off, 1 = full speed). Higher keeps up better but may overshoot.
+FEEDFORWARD = 0.5
+FEEDFORWARD_MIN_SPEED = 5.0     # deg/s; slower is treated as standing still
+VELOCITY_SMOOTHING = 0.4        # 0..1; higher reacts faster but is noisier
+# Delay from a servo command until the picture shows the move (measured on
+# this rig: 130-165 ms), so each frame is matched to where the camera was
+# pointing when it was taken.
+CAMERA_LATENCY_S = 0.13
+# Only a face tracked for at least TRUST_FRAMES frames, with eyes found in at
+# least TRUST_EYE_FRAMES of them, is trusted for coasting, searching and quick
+# re-lock. A false lock (e.g. on a blurred wall pattern) just ends in a short hold.
+TRUST_FRAMES = 15
+TRUST_EYE_FRAMES = 3
+# While the tracked face is missing, keep the lock and keep turning towards its
+# predicted position for up to this many frames (15 = about 0.5 s).
+COAST_FRAMES = 15
+PREDICT_MAX_S = 0.5             # never predict further ahead than this
+# For this long after the lock is lost, a face within RELOCK_RADIUS_DEG of
+# where the lost face should be (and of similar size) is locked at once. While
+# searching (below), any face of similar size is locked at once.
+RELOCK_S = 1.0
+RELOCK_RADIUS_DEG = 15.0
+# After the lock is lost, quickly pan SEARCH_DEG the way the face was going
+# (if it was moving at least SEARCH_MIN_SPEED_DEG_S, or was near the frame
+# edge), then carry on scanning that way. If the direction is unknown, look
+# SEARCH_DEG/2 to each side of where it was last seen, then come back.
+SEARCH_SPEED_DEG_S = 40.0
+SEARCH_DEG = 60.0
+SEARCH_MIN_SPEED_DEG_S = 8.0
+
 # --- Scanning when no face is visible ---
 LOST_FACE_HOLD_S = 1.5    # hold position this long before starting to scan
 SCAN_SPEED_DEG_S = 20.0   # pan sweep speed
