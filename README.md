@@ -5,6 +5,8 @@ Haar cascade finds the faces. Two servos on a pan/tilt mount then move the
 camera until the largest face is in the centre of the picture. When nobody is
 in view, the camera slowly scans back and forth.
 
+Source code: https://github.com/stmorgan/vcceye-pantilt-tracker
+
 ## Hardware
 
 | Part | Details |
